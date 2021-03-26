@@ -120,6 +120,9 @@ While the field of rigid body simulation is well researched, it is often challen
 \section{Introduction}
 The motion of rigid bodies can be modeled using Lagrangian mechanics. This framework allows us to use both forces and constraints to control the motion of bodies.
 
+When a high number of rigid bodies are connected using contraints, we obtain dynamic systems akin to discretized deformable bodies like ropes, hair, or cloth. While performing the simulation of such systems using rigid body dynamics is an expensive approach, it inherently provides solutions for collisions, friction, or inextendibility. In this paper, we describe a rigid body simulation framework that supports constraints necessary for approximating deformable bodies, and we evaluate the performance and stability against the classic mass-and-spring system (?) and position based dynamics (?) approaches. Real-time hair simulation is generally based on the work of Müller et al.\cite{FTL}, supporting highly dynamic simulation of a high number of inextensible hair strands, but without interaction between hair strands handled only through a density field. We compare our method of using connected rigid bodies for hair simulation against this baseline, and identify hairstyles where our approach may have benefits.
+
+\section{Lagrange's equations}
 In three dimensional space, the position of a rigid body can be described with three Cartesian coordinates, and its rotation with three Euler angles (or an equivalent rotation representation, such as quaternions). Thus, given \(N\) independent bodies, we can describe them with \(6N\) coordinates. These are called maximal coordinates. To enforce constraints, Lagrange multipliers are used, giving equations of the following kind (Lagrange's equations):
 \[\frac{\partial L}{\partial r_k}-\frac{d}{dt}\frac{\partial L}{\partial \dot{r_k}}+\sum_i \lambda_i \frac{\partial f_i}{\partial r_k} = 0\]
 Where \(L\) is the Lagrangian, which describes the total energy of the system in terms of the positions (linear and angular) \(r_k\) and velocities \(\dot{r_k}\) of the rigid bodies, \(f_i\) are constraint functions, which depend on the positions of rigid bodies and have to evaluate to zero in valid configurations, and \(lambda_i\) are the Lagrange multipliers.
@@ -149,6 +152,7 @@ Considering only efficient, first order methods, the following three can be used
 	\[\mathbf{x}_2=\mathbf{x}_1+h \mathbf{v}_2\]
 \end{itemize}
 While the implicit Euler method has good stability, it would require an expensive, iterative equation solver, so it is not used for rigid body simulation. The usual Euler method and the semi-implicit Euler method only differ in which velocity is used to update the position, but it turns out that the semi-implicit method has much better stability. The semi-implicit Euler method is also a symplectic integrator, i.e. the Hamiltonian (which is equal to the total energy in most cases) is approximately conserved (See \cite{hairer2006long} for an overview). Note that energy tends to increase when using the Euler method, which can lead to a simulation “blowing up”. This makes the semi-implicit Euler method the most reasonable integrator choice. Incidentally, it is also the simplest to implement.
+
 \section{Constraint solver}
 To solve Lagrange’s equation, let us start by considering the Newton–Euler equations. Store the velocities (both linear and angular) of all rigid bodies in the v vector the following way:
 \[\mathbf{v}=(v_{1x},v_{1y},v_{1z},\omega_{1x},\omega_{1y},\omega_{1z},v_{2x},v_{2y},v_{2z},\omega_{2x},\omega_{2y},\omega_{2z},…)\]
@@ -186,6 +190,7 @@ Where \(\mathbf{c}\) is a new parameter. This leads to the following equation fo
 \[(\mathbf{J} \mathbf{M}^{-1} \mathbf{J}^T + \frac{\mathbf{c}}{h})h\mathbf{\lambda} = -(\mathbf{J}(\mathbf{v}_1+h\mathbf{M}^{-1}\mathbf{N})+\mathbf{b})\]
 Adding to the diagonal of the K matrix increases its eigenvalues, and thus reduces any numerical problems.
 
+\section{Derivation of constraints}
 Let us now examine how constraints can be derived. For example, the contact constraint can be defined using an anchor point \(\mathbf{p}\), and a normal vector \(\mathbf{n}\). If the anchor point is a contact point of two rigid bodies, the contact constraint can be used to prevent interpenetration between them. We can transform the anchor point to the local coordinate system of the rigid bodies by \(\mathbf{r}_a=\mathbf{p}-\mathbf{x}_{a0}\) and \(\mathbf{r}_b=\mathbf{p}-\mathbf{x}_{b0}\). If we were to change the position of the rigid bodies, we could recalculate the contact point as \(\mathbf{x}_a+\mathbf{r}_a\) and \(\mathbf{x}_b+\mathbf{r}_b\). These should satisfy the equation \(((\mathbf{x}_a+\mathbf{r}_a)-(\mathbf{x}_b+\mathbf{r}_b)) \cdot \mathbf{n}=0\). This allows sliding tangential to the normal vector, but does not allow the bodies to move toward each other. Therefore, we can define the constraint function as \(f(\mathbf{x}_a,\mathbf{x}_b) = ((\mathbf{x}_a+\mathbf{r}_a)-(\mathbf{x}_b+\mathbf{r}_b)) \cdot \mathbf{n}\). The time derivative is then:
 \[\dot{f} = ((\mathbf{v}_a+\mathbf{\omega}_a \times \mathbf{r}_a)-(\mathbf{v}_b+\mathbf{\omega}_b \times \mathbf{r}_b)) \cdot \mathbf{n}\]
 Note that an infinitesimal change of the position of a point \(\mathbf{p}=\mathbf{x}_a+\mathbf{r}_a\) on a rigid body can be caused by either an infinitesimal change in the position of the center of mass (\(\mathbf{v}_a\)), or an infinitesimal rotation around the center of mass (\(\mathbf{\omega}_a \times \mathbf{r}_a\)). This can be expressed as the product of a Jacobian matrix and the velocity vector in the following way:
@@ -218,6 +223,7 @@ If \(c\) is zero, the constraint force fully counteracts any external force. Whe
 
 Other tricks to increase stability and reduce jitter include artificial dampening of velocities or clamping small corrective forces to zero. In our testing, these have not had a significant impact, but might be useful in some situations.
 
+\section{Solving for constrained velocities}
 Each row of the \(\mathbf{J}\) matrix removes a single degree of freedom from the bodies it affects. Most constraints only affect two bodies, leading to 12 nonzero elements in the row. The other 6*(N-2) elements, corresponding to the state of every other body, are zero. \(\mathbf{M}\) and \(\mathbf{K}\) are also highly sparse. Calculating \(\mathbf{\lambda}\) requires solving a linear system of equations with \(\mathbf{K}\) as the coefficient matrix. This requires using some form of Gaussian elimination, which has a complexity of \(O(n^3)\). Even if we use sparse representations to compress the matrices, the execution time still increases rapidly with the number of constraints and bodies. These methods, which work on the whole matrix at once, are called global solvers. They have the advantage of exactly computing a solution that satisfies all constraints, but are complex and slow. Instead, most physics engines (including ours) use an iterative solver that only considers one (or a few) constraints at a time. The simplest iterative solver is called Sequential Impulses, and uses this algorithm (see \cite{catto2009modeling} for details):
 \begin{itemize}
 	\item Apply non-constraint forces to all bodies (\(\mathbf{v}_2 = \mathbf{v}_1 + h \mathbf{M}^{-1} \mathbf{N}\)). The resulting velocity usually violates constraints.
@@ -230,6 +236,7 @@ One way to look at this is that each constraint defines a hyperplane in the velo
 
 Throughout the iteration, we can keep track of the total impulse applied by a constraint in a given frame. We can use this to limit the maximum or minimum constraint force. This allows a contact constraint to prevent the interpenetration but allow the separation of two bodies, and can also be used to model static friction or implement breakable constraints. We have had difficulties with this, as clamping the total impulse resulted in jitter or instability. We have been unable to determine the cause of this despite comparing the implementation at the source level with that of multiple open-source physics engines.
 
+\section{Rotational constraints}
 There are multiple alternatives for representing the rotation of a rigid body. In our engine, all computations are quaternion-based, as they are efficient to compute, and avoid the many problems inherent to Euler angles). We recommend the following method for rotational constraints:
 \begin{itemize}
 \item Define a constraint coordinate system, with a rotation \(q_c\). Rotation limits will apply to the rotations around this coordinate system’s axes.
@@ -243,12 +250,14 @@ There are multiple alternatives for representing the rotation of a rigid body. I
 \item By taking the time derivative, applying the usual quaternion derivative formula, and rewriting operations into matrix form, we can determine the Jacobian.
 \end{itemize}
 This method is similar to that of \cite{tamis3d}, but allows us to define rotation limits in an arbitrarily selected coordinate system.
+
 \section{Collision detection}
 To use the previously presented contact constraint, we have to find contact points between the bodies. In theory, it is possible to determine exact collision points and times using continuous collision detection, but this is very expensive to compute. As long as the velocity of rigid bodies is small relative to their size, using discrete collision detection is adequate. This involves updating the positions of bodies, then checking if they overlap. If the time step is small, these overlaps will be too small to be noticeable, and will be corrected by the generated contact constraints. Collision detection for concave shapes is a complicated problem, and is usually approximated using multiple convex shapes. Two main algorithms are in use for convex collision detection: one based on the separating axis theorem (SAT), and one on the Gilbert–Johnson–Keerthi distance algorithm (GJK). We have implemented both methods, and found that GJK has better performance in three dimensions. In a lot of cases, SAT can quickly find a separation if one exists (i.e. prove that two shapes do not intersect), but all possible axes need to be checked to prove that the shapes do intersect. For two dimensional polygons, all edge normal vectors have to be tried (the number of which scales linearly with the complexity of polygons), but for three dimensional polyhedra, not only all face normals, but all cross products of edge vectors have to be tried (which scales quadratically). In addition, SAT cannot handle spheres and similar non-polyhedral shapes. For this reason, the current version of our engine uses GJK. Our implementation is based on \cite{montanari2017improving}, with various simplifications. GJK can compute the distance between shapes, but to get the normal vector, collision points, and the depth of overlap, the Expanding Polytope Algorithm has to be used. Out implementation uses the simplification suggested by \cite{jesst2008simplification}. In the case of polyhedra, after determining the colliding simplices, at most 4 points of collision are determined as described by \cite{gregorius2015robust}. These algorithms work well in most cases, but numerical issues can appear in some situations (e.g. near-parallel edges). Checking each division for NaN or infinite results has been useful in debugging these.
 
 Collision detection can be optimized with a broadphase step, which quickly discards pairs of bodies that definitely do not intersect. This can be quickly checked using axis aligned bounding boxes. This is fast enough for small numbers of bodies, but since all pairs need to be checked, the cost scales as \(O(n^2)\). For larger scenes, bounding volume hierarchies can be used, but this is likely only needed as the number of bodies approaches the hundreds.
 
 Our physics engine only supports rigid bodies made of convex polyhedra at the moment, allowing efficient moment of inertia and collision calculations. To approximate concave bodies, multiple convex polyhedra can be attached to the same body. The automatic calculation of mass properties also allows us to specify the densities of rigid bodies rather than their mass, which is instead computed using the volume.
+
 \section{Applications to soft body simulation}
 We have also examined the application of rigid body physics to simulate soft bodies (such as cloth or hair). While this usually provides a less precise approximation (since a limited number of rigid bodies can be used), it does have some advantages compared to e.g. per-vertex spring-mass models. For example, friction between rigid bodies is simple to implement, while a position-based spring-mass model usually cannot relate the friction force to the normal force.
 
@@ -256,7 +265,10 @@ For hair simulation, working with large numbers of strands has become increasing
 
 Using rigid body simulation to approximate soft bodies also allows a wide variety of constraints to be applied to the soft bodies, allowing a larger degree of artist control over the results, and integrates seamlessly with existing physics systems. One downside, however, that we have experienced is the slow convergence of the Sequential Impulses solver for long, stiff chains. This is usually not a problem for soft bodies, as they have low stiffness, but one should be aware that there are cases (some of these are documented by \cite{catto2014understanding}) where different solvers are needed for fast convergence.
 
+\section{Results}
+
 To create a convincing soft body simulation using this method, the positions of the rigid bodies should be used to deform a triangle mesh, usually through a skeletal animation rig. Our implementation can import scenes from Blender, an open source 3d modeling software, with all the necessary meshes, textures, and rigs aside from the rigid bodies and constraints. This allows us to rapidly prototype simulations in Blender, and then evaluate them in our engine. We have used this pipeline to create simple simulations of hair, cloth, ragdolls, and conventional rigid bodies, with varying degree of success.
+
 
 \begin{figure}[ht]
 	\centering
@@ -285,6 +297,8 @@ To create a convincing soft body simulation using this method, the positions of 
 	\caption{A three dimensional soft body deformed after collision with a cube.}
 	\label{fig:3d}
 \end{figure}
+
+\section{Conclusion}
 
  %%% The bibliography
 \bibliographystyle{plain}
