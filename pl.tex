@@ -275,7 +275,7 @@ Using rigid body simulation to approximate soft bodies also allows a wide variet
 
 To create a convincing soft body simulation using this method, the positions of the rigid bodies should be used to deform a triangle mesh, usually through a skeletal animation rig. Our implementation can import scenes from Blender, an open source 3d modeling software, with all the necessary meshes, textures, and rigs aside from the rigid bodies and constraints. This allows us to rapidly prototype simulations in Blender, and then evaluate them in our engine. We have used this pipeline to create simple simulations of hair, cloth, ragdolls, and conventional rigid bodies, with varying degree of success.
 
-Figure~\ref{fig:softbody} shows a phyically animated skeletal model. The model consists of ??? rigid bodies, and the solver took ???? ms per frame.
+Figure~\ref{fig:softbody} shows a phyically animated skeletal model. The model consists of 5 rigid bodies, and the solver took 0.4 ms per frame.
 
 \begin{figure}[ht]
 	\centering
@@ -284,7 +284,7 @@ Figure~\ref{fig:softbody} shows a phyically animated skeletal model. The model c
 	\label{fig:softbody}
 \end{figure}
 
-Figures~\ref{fig:fabric} and~\ref{fig:fabric} shows cloth simualtion. The model consists of ??? rigid bodies, and the solution of the contraint system took ???? ms per frame. In contrast, Figure\ref{fig:pbd} shows a capture from our position-based dynamics implementation for cloth simulation, also using ??? points, but only taking ??? ms per frame. While PBD are much faster, collisions are not supported.
+Figures~\ref{fig:fabric} and~\ref{fig:fabric} ??? shows cloth simualtion. The model consists of 32*32 rigid bodies, and the solution of the contraint system took 111 ms per frame. In contrast, Figure\ref{fig:pbd} shows a capture from our position-based dynamics implementation for cloth simulation using the same number of points, but only taking 1 ms per frame. While the PBD algorithm is much faster, it supports less features, and does not integrate seamlessly with classical rigid body simulations.
 
 \begin{figure}[ht]
 	\centering
@@ -307,7 +307,7 @@ Figures~\ref{fig:fabric} and~\ref{fig:fabric} shows cloth simualtion. The model 
 	\label{fig:roll}
 \end{figure}
 
-In Figure~\ref{fig:3d} three-dimensional soft-body simulation is illustrated. For ??? rigid bodies connected by ??? contraints, the solver took ???? ms per time step.
+In Figure~\ref{fig:3d} three-dimensional soft-body simulation is illustrated. For 125 rigid bodies connected by 300 contraints, the solver took 13 ms per time step.
 
 \begin{figure}[ht]
 	\centering
