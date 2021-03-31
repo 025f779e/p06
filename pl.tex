@@ -252,7 +252,7 @@ Throughout the iteration, we can keep track of the total impulse applied by a co
 There are multiple alternatives for representing the rotation of a rigid body. In our engine, all computations are quaternion-based, as they are efficient to compute, and avoid the many problems inherent to Euler angles). We recommend the following method for rotational constraints:
 \begin{itemize}
 \item Define a constraint coordinate system, with a rotation \(q_c\). Rotation limits will apply to the rotations around this coordinate system’s axes.
-\item Store the initial rotations of the two bodies: \(q_a0, q_b0\)
+\item Store the initial rotations of the two bodies: \(q_{a0}, q_{b0}\)
 \item For each frame, calculate the difference between the current relative rotation and the initial relative rotation:
 \[r=q_a^*q_b(q_{a0}^*q_{b0})^*\]
 \item Calculate the axes around which rotation will be constrained. This can be done by converting a quaternion to a rotation matrix (note that the columns of this matrix are exactly the axes of the constraint coordinate system, transformed to the local coordinate system of the first body):
@@ -280,12 +280,12 @@ Using rigid body simulation to approximate soft bodies also allows a wide variet
 
 To create a convincing soft body simulation using this method, the positions of the rigid bodies should be used to deform a triangle mesh, usually through a skeletal animation rig. Our implementation can import scenes from Blender, an open source 3d modeling software, with all the necessary meshes, textures, and rigs aside from the rigid bodies and constraints. This allows us to rapidly prototype simulations in Blender, and then evaluate them in our engine. We have used this pipeline to create simple simulations of hair, cloth, ragdolls, and conventional rigid bodies, with varying degree of success.
 
-Figure~\ref{fig:softbody} shows a physically animated skeletal model. The model consists of 5 rigid bodies, and the solver took 0.4 ms per frame.
+Figure~\ref{fig:softbody} shows a physically animated skeletal model. The grey objects with black wireframes are visualizations of rigid bodies used for debugging. The red deformed cylinder is driven by skeletal animation. The model consists of 5 rigid bodies, and the solver took 0.4 ms per frame.
 
 \begin{figure}[ht]
 	\centering
 	\includegraphics[width=0.8\linewidth]{softbody}
-	\caption{Example soft body simulation. The grey objects with black wireframes are visualizations of rigid bodies used for debugging. The red deformed cylinder is driven by skeletal animation.}
+	\caption{Example soft body simulation created using rigid bodies and skeletal animation.}
 	\label{fig:softbody}
 \end{figure}
 
@@ -305,6 +305,8 @@ Figure~\ref{fig:fabric} shows cloth simulation. The model consists of \(32 \time
 	\label{fig:pbd}
 \end{figure}
 
+Figure~\ref{fig:roll} shows a situation where self-collision and friction can influence the results. While rigid body simulation handles these phenomena, we have found that a further increase in rigid body count would be required for realistic behavior.
+
 \begin{figure}[ht]
 	\centering
 	\includegraphics[width=0.8\linewidth]{roll}
@@ -320,6 +322,8 @@ In Figure~\ref{fig:3d} three-dimensional soft-body simulation is illustrated. Fo
 	\caption{A three dimensional soft body deformed after collision with a cube.}
 	\label{fig:3d}
 \end{figure}
+
+A simulation of hair-like strands can be seen in Figure~\ref{fig:rigid_hair}. Each strand strand can collide with others and the environment. Figure~\ref{fig:pbd_hair} shows a similar setup, but with a much larger number of points.
 
 \begin{figure}[ht]
 	\centering
