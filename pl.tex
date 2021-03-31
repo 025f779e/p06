@@ -117,14 +117,14 @@ Rigid body simulation with constraints offers a well-established and robust appr
 \keywordlist
 
 \section{Introduction}
-When a high number of rigid bodies are connected using contraints, we obtain dynamic systems akin to discretized deformable bodies like ropes, hair, or cloth. While performing the simulation of such systems using rigid body dynamics is an expensive approach, it inherently provides solutions for collisions, friction, or inextendibility. In this paper, we describe a rigid body simulation framework that supports constraints necessary for approximating deformable bodies, and we evaluate the performance and stability against an implementation of  the most often used position-based dynamics\cite{PBD} approach. Real-time hair simulation is generally based on the work of Müller et al.\cite{FTL}, supporting highly dynamic simulation of a high number of inextensible hair strands, but without interaction between hair strands handled only through a density field. We compare our method of using connected rigid bodies for hair simulation against this baseline, and identify hairstyles where our approach may have benefits. ??? I think about big braids of hair colliding with one another. Simple fixed contraints like hairbands are well handled by PBD.
+When a high number of rigid bodies are connected using contraints, we obtain dynamic systems akin to discretized deformable bodies like ropes, hair, or cloth. While performing the simulation of such systems using rigid body dynamics is an expensive approach, it inherently provides solutions for collisions, friction, or inextendibility. In this paper, we describe a rigid body simulation framework that supports constraints necessary for approximating deformable bodies, and we evaluate the performance and stability against an implementation of  the most often used position-based dynamics\cite{muller2007position} approach. We compare our method of using connected rigid bodies for hair simulation against this baseline, and identify hairstyles where our approach may have benefits. ??? I think about big braids of hair colliding with one another. Simple fixed contraints like hairbands are well handled by position-based dynamics (PBD).
 We also implement character animation, where jointed rigid bodies are already the state of the art.
 
-The motion of rigid bodies can be modeled using Lagrangian mechanics. This framework allows us to use both forces and constraints to control the motion of bodies.
+The motion of rigid bodies can be modeled using Lagrangian mechanics. This framework allows us to use both forces and constraints to control the motion of bodies. Placing constraints on the velocities of objects can prevent the simulation from transitioning into invalid position states, enabling the creation of stiff systems. However, solving these constraints takes a significant amount of calculation, and the stiffness often causes instabilities. An alternative, used by PDB, is to only use positions in calculations. This is more stable, but does not directly support rotation constraints, and constraints are characteristically elastic.
 
 \section{Previous work}
 
-PDB.
+Real-time hair simulation is generally based on the work of Müller et al.\cite{muller2012fast}, supporting highly dynamic simulation of a high number of inextensible hair strands, but without interaction between hair strands handled only through a density field. 
 
 For hair simulation, working with large numbers of strands has become increasingly popular. Some specialized algorithms are capable of simulating each strand of hair individually, whereas with rigid bodies, only a lower number of guide strands can be simulated, since each body requires a relatively large number of calculations. In the video game industry, real-time performance, and artist control over simulations is important. For this reason, it is common to reuse existing skeletal animation and rigid body simulation systems to control hair guide strands through chains of bones \cite{rungjiratananon2015physics}. The low resource consumption of this method makes it suitable for lower-end (such as mobile) devices, or as part of a LoD scheme even if more expensive methods are used for characters close to the camera.
 
@@ -284,13 +284,20 @@ Figure~\ref{fig:softbody} shows a phyically animated skeletal model. The model c
 	\label{fig:softbody}
 \end{figure}
 
-Figures~\ref{fig:fabric} and~\ref{fig:fabric} shows cloth simualtion. The model consists of ??? rigid bodies, and the solution of the contraint system took ???? ms per frame. In contrast, Figure\ref{fig:pdb} shows a capture from our position-based dynamics implementation for cloth simulation, also using ??? points, but only taking ??? ms per frame. While PBD are much faster, collisions are not supported.
+Figures~\ref{fig:fabric} and~\ref{fig:fabric} shows cloth simualtion. The model consists of ??? rigid bodies, and the solution of the contraint system took ???? ms per frame. In contrast, Figure\ref{fig:pbd} shows a capture from our position-based dynamics implementation for cloth simulation, also using ??? points, but only taking ??? ms per frame. While PBD are much faster, collisions are not supported.
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width=0.8\linewidth]{sim_fabric}
+	\includegraphics[width=0.8\linewidth]{sequence}
 	\caption{Visualization of a fabric deformed after collision with a cube.}
 	\label{fig:fabric}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.8\linewidth]{pbd}
+	\caption{Baseline BBD simulation.}
+	\label{fig:pbd}
 \end{figure}
 
 \begin{figure}[ht]
