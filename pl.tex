@@ -319,6 +319,20 @@ In Figure~\ref{fig:3d} three-dimensional soft-body simulation is illustrated. Fo
 	\label{fig:3d}
 \end{figure}
 
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.8\linewidth]{rigid_hair}
+	\caption{Hair simulation with rigid bodies.}
+	\label{fig:rigid_hair}
+\end{figure}
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.8\linewidth]{pbd_hair}
+	\caption{Hair simulation with PBD.}
+	\label{fig:pbd_hair}
+\end{figure}
+
 \section{Conclusion}
 
 Our measurements show that rigid-body simulation with generic constraints can achieve interactive performance even for relatively large element and constraint counts, realizing complex dynamic models. However, position-based solutions vastly outperform this approach. Therefore, rigid body simulations are only warranted if exact control over rotational constraints or collisions are needed, as is the case with physically animated skeletal ragdoll models. 
